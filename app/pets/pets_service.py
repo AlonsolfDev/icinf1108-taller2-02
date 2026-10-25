@@ -98,6 +98,4 @@ class PetsService:
             raise conflict(
                 {"name": {"message": "Ya tienes una mascota con ese nombre"}}
             )
-
-
 pets_service = PetsService(pets_repository, students_service)

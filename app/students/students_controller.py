@@ -38,7 +38,6 @@ def update(
 
 @router.delete("/{studentId}")
 def delete(studentId: str, db: Session = Depends(get_db)) -> Student:
-    deleted = students_service.delete(db, studentId)
     pets_service.delete_all_for_student(studentId)
-
+    deleted = students_service.delete(db, studentId)
     return deleted

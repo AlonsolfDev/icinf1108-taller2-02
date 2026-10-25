@@ -84,7 +84,7 @@ class StudentsService:
 
         for field, value in data.model_dump(exclude_none=True).items():
             setattr(existing, field, value)
-        existing.updatedAt = utc_now()
+        existing.updated_at = utc_now()
 
         db.commit()
         db.refresh(existing)
