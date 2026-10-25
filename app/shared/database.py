@@ -20,10 +20,13 @@ class Base(DeclarativeBase):
     """Clase base de la que heredan todos los modelos del ORM."""
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session]:
     """Dependencia de FastAPI: entrega una sesión y la cierra al terminar."""
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()

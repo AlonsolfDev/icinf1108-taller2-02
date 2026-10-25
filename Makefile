@@ -1,4 +1,4 @@
-.PHONY: install dev prod lint format format-check clean check-tools
+.PHONY: install dev prod lint format format-check clean check-tools test
 
 check-tools:
 	@if ! command -v uv >/dev/null 2>&1; then \
@@ -27,3 +27,7 @@ format-check:
 clean:
 	rm -rf .venv dist .ruff_cache
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
+
+# Requiere PostgreSQL iniciado y .env configurado.
+test:
+	uv run pytest -q
