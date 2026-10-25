@@ -1,28 +1,33 @@
-from app.shared.in_memory_store import InMemoryStore
-from app.students.students_schemas import Student
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.students.students_model import StudentModel
 
 
 class StudentsRepository:
-    def __init__(self) -> None:
-        self._store: InMemoryStore[Student] = InMemoryStore()
+    def find_all(self, db: Session) -> list[StudentModel]:
+        stmt = select(StudentModel).order_by(StudentModel.created_at.desc())
+        return list(db.scalars(stmt).all())
 
-    def find_all(self) -> list[Student]:
-        return self._store.find_all()
+    def find_by_id(self, db: Session, student_id: str) -> StudentModel | None:
+        return db.get(StudentModel, student_id)
 
-    def find_by_id(self, student_id: str) -> Student | None:
-        return self._store.get(student_id)
+    def find_by_email(self, db: Session, email: str) -> StudentModel | None:
+        stmt = select(StudentModel).where(StudentModel.email == email)
+        return db.scalars(stmt).first()
 
-    def find_by_email(self, email: str) -> Student | None:
-        matches = self._store.find_by(lambda student: student.email == email)
-        return matches[0] if matches else None
+    def find_by_username(self, db: Session, username: str) -> StudentModel | None:
+        stmt = select(StudentModel).where(StudentModel.username == username)
+        return db.scalars(stmt).first()
 
-    def find_by_username(self, username: str) -> Student | None:
-        matches = self._store.find_by(lambda student: student.username == username)
-        return matches[0] if matches else None
-
-    def save(self, student: Student) -> Student:
-        self._store.set(student)
+    def save(self, db: Session, student: StudentModel) -> StudentModel:
+        db.add(student)
+        db.flush()
         return student
 
-    def delete(self, student_id: str) -> None:
-        self._store.delete(student_id)
+    def delete(self, db: Session, student: StudentModel) -> None:
+        db.delete(student)
+        db.flush()
+
+
+students_repository = StudentsRepository()
