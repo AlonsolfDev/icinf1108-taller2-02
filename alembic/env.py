@@ -5,6 +5,8 @@ from sqlalchemy import engine_from_config, pool
 
 from app.shared.database import DATABASE_URL, Base
 
+from app.students.students_model import StudentModel  # noqa: F401
+
 # Importa aquí los modelos para que Alembic los detecte, por ejemplo:
 # from app.students.students_model import Student
 # from app.pets.pets_model import Pet
