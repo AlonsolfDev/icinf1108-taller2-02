@@ -487,3 +487,4 @@ tsconfig.tsbuildinfo
 
 # Solución de referencia de la actividad Docker (no versionar)
 solucion/
+.pytest_cache/

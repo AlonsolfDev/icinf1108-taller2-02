@@ -1,11 +1,12 @@
 # CRUD Students & Pets (FastAPI)
 
-Proyecto FastAPI que implementa un **CRUD** para la entidad `Student` y sus `Pet`, con **almacenamiento en memoria** a través de repositorios respaldados por diccionarios. Los datos viven mientras el proceso esté corriendo.
+Proyecto FastAPI con CRUD de estudiantes y mascotas, persistencia en PostgreSQL mediante SQLAlchemy y migraciones versionadas con Alembic. PostgreSQL y pgAdmin se ejecutan con Docker Compose.
 
 ## Tecnologías
 
 - Python 3.13
-- FastAPI + repositorios en memoria
+- FastAPI + SQLAlchemy + Alembic
+- PostgreSQL 17 + pgAdmin en Docker
 - HTML + JS + Tailwind CSS (frontend estático)
 
 ## Resumen funcional
@@ -46,7 +47,7 @@ La API expone operaciones CRUD completas sobre estudiantes y mascotas:
 
 Si no se envía `pets` (o se envía vacío), el comportamiento es exactamente el mismo de antes.
 
-> **Punto de transacción:** este endpoint realiza varias escrituras (el estudiante y cada mascota). Con un ORM/SQL, todas deben ejecutarse dentro de una transacción: si una mascota falla (por ejemplo, por nombre duplicado), el estudiante y las mascotas anteriores no deben quedar guardados. En esta versión en memoria la implementación es secuencial y **no** hace rollback, a propósito, para que la actividad de ORM/transacciones parta de ese problema.
+> **Transacciones:** crear un estudiante con mascotas usa una única sesión y un único commit. Si falla cualquier escritura, se revierten el estudiante y todas sus mascotas. Eliminar un estudiante elimina sus mascotas en la misma transacción mediante la relación y la clave foránea con `ON DELETE CASCADE`. Los repositorios usan `flush()`; los servicios controlan commit y rollback.
 
 ### Modelo de datos
 
@@ -185,7 +186,7 @@ El cliente estático (`public/`) consume este estándar de forma uniforme:
 ## Contexto técnico
 
 - **Backend**: FastAPI
-- **Persistencia**: en memoria (repositorios respaldados por diccionarios); los datos se pierden al reiniciar
+- **Persistencia**: PostgreSQL con volumen Docker; los datos sobreviven al reinicio de la API y de los contenedores
 - **Validación**: Pydantic v2
 - **Frontend**: archivos estáticos en `public/` (Alpine.js + Tailwind CSS + vanilla-sonner, vía CDN)
 - **Gestor de dependencias**: uv
@@ -193,36 +194,57 @@ El cliente estático (`public/`) consume este estándar de forma uniforme:
 
 ## Ejecución local
 
-1. Instalar dependencias:
+Requisitos: Docker Desktop, uv y Python 3.13 o superior.
 
-    ```bash
-    make install
-    ```
+1. Copiar `.env.example` a `.env` solamente si todavía no existe este último. Ajustar usuario, contraseña, base y puertos; `DATABASE_URL` debe coincidir con `POSTGRES_*`. No versionar `.env`.
+2. Instalar las dependencias:
 
-    O directamente con uv:
-
-    ```bash
+    ```powershell
     uv sync
     ```
 
-2. Levantar el servidor en modo desarrollo:
+3. Iniciar PostgreSQL y pgAdmin:
 
-    ```bash
-    make dev
+    ```powershell
+    docker compose up -d --wait
     ```
 
-    O usando uv:
+4. Aplicar las migraciones:
 
-    ```bash
+    ```powershell
+    uv run alembic upgrade head
+    ```
+
+5. Iniciar la API:
+
+    ```powershell
     uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
     ```
 
-La aplicación queda disponible en:
+- Aplicación: http://localhost:3000
+- Swagger: http://localhost:3000/docs
+- pgAdmin: http://localhost:5050, o el puerto definido en `PGADMIN_PORT`.
 
-- `http://localhost:3000`
-- `http://localhost:3000/docs`
+En pgAdmin, ingresar con `PGADMIN_DEFAULT_EMAIL` y `PGADMIN_DEFAULT_PASSWORD` del `.env`. Registrar PostgreSQL con host `db`, puerto interno `5432` y los valores de `POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB`. La API ejecutada en Windows usa `localhost` y el puerto publicado `POSTGRES_PORT`.
 
-> Al ser un almacenamiento en memoria, los datos se pierden cada vez que se reinicia el servidor (incluido el reload de desarrollo).
+El volumen local existente fue inicializado con PostgreSQL 17; `compose.yml` usa esa misma versión. No utilizar `docker compose down -v` para reiniciar: esa opción elimina los volúmenes. Reiniciar con `docker compose restart` o detener con `docker compose down`, sin `-v`.
+
+## Verificación
+
+Con PostgreSQL iniciado y `.env` configurado:
+
+```powershell
+uv run pytest -q
+uv run alembic check
+uv run ruff check app tests alembic/env.py alembic/versions/70e4dfb1ebe7_crear_pets_y_relacion_con_students.py
+uv run ruff format --check app tests alembic/env.py alembic/versions/70e4dfb1ebe7_crear_pets_y_relacion_con_students.py
+```
+
+Las pruebas crean esquemas PostgreSQL temporales con nombres aleatorios y aplican las migraciones desde cero. Al terminar eliminan únicamente esos esquemas, sin usar las tablas de datos de la aplicación. El usuario configurado necesita permiso para crear esquemas.
+
+Cubren CRUD, lectura desde sesiones nuevas, fechas de actualización, unicidad, pertenencia de mascotas, validación, cascada y rollback. Se fuerzan fallos después de un `flush()` tanto al crear como al eliminar: las pruebas comprueban primero las escrituras dentro de la transacción y después su reversión desde otra sesión.
+
+Para demostrar manualmente el rollback en Swagger, enviar un estudiante nuevo con dos mascotas que tengan el mismo nombre: debe responder `409` y no guardar ni al estudiante ni sus mascotas. Volver a enviarlo con nombres distintos debe funcionar con el mismo usuario y correo del intento fallido.
 
 ## Comandos útiles
 

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.pets.pets_service import pets_service
 from app.shared.database import get_db
 from app.students.students_schemas import (
     CreateStudentDto,
@@ -38,6 +37,4 @@ def update(
 
 @router.delete("/{studentId}")
 def delete(studentId: str, db: Session = Depends(get_db)) -> Student:
-    pets_service.delete_all_for_student(studentId)
-    deleted = students_service.delete(db, studentId)
-    return deleted
+    return students_service.delete(db, studentId)

@@ -18,7 +18,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="FastAPI CRUD Students & Pets",
         description=(
-            "API de un CRUD en memoria para la entidad Student y sus mascotas (Pet)"
+            "API de estudiantes y mascotas con PostgreSQL, SQLAlchemy y transacciones"
         ),
         version="1.0",
     )

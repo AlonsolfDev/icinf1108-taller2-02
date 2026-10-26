@@ -6,7 +6,7 @@ from app.students.students_model import StudentModel
 
 class StudentsRepository:
     def find_all(self, db: Session) -> list[StudentModel]:
-        stmt = select(StudentModel).order_by(StudentModel.created_at.desc())
+        stmt = select(StudentModel).order_by(StudentModel.createdAt.desc())
         return list(db.scalars(stmt).all())
 
     def find_by_id(self, db: Session, student_id: str) -> StudentModel | None:
