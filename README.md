@@ -254,3 +254,23 @@ Para demostrar manualmente el rollback en Swagger, enviar un estudiante nuevo co
 - `make format` — formatea el código con Ruff
 - `make format-check` — verifica el formato
 - `make clean` — elimina `.venv`, cachés y artefactos
+
+## Ejecución con Docker y PostgreSQL
+
+1. Copiar las variables de entorno (el archivo `.env` no se sube a Git):
+   `Copy-Item .env.example .env`
+   Si el puerto 5432 ya está ocupado en tu PC, cambia `POSTGRES_PORT` y el puerto de `DATABASE_URL` en tu `.env` (por ejemplo a 5433).
+2. Levantar PostgreSQL 17 y pgAdmin: `docker compose up -d`
+3. Instalar dependencias: `uv sync`
+4. Aplicar migraciones: `uv run alembic upgrade head`
+5. Iniciar la API: `uv run uvicorn app.main:app --reload`
+6. Documentación de la API: http://localhost:8000/docs
+7. pgAdmin: http://localhost:5050. Al registrar el servidor usa host `db`, puerto `5432`, y el usuario y la clave de tu `.env`.
+8. Tests: `uv run python -m pytest -v`
+
+## Equipo
+
+- Alonso (líder): Docker, compose y variables de entorno
+- Jesús: base del ORM y Alembic
+- Tomás: Student (modelo, repositorio, servicio y migración)
+- Diego: Pet, relación con Student y transacciones
